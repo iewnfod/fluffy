@@ -1,5 +1,5 @@
 use std::fs::{create_dir_all, remove_file};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::process::Command;
 use std::string::ToString;
 use actix_files::NamedFile;
@@ -13,7 +13,7 @@ mod data;
 
 const APP_ID: &str = "com.iewnfod.fluffy";
 lazy_mut! {
-    static mut WEB_DIR: String = String::new();
+    static mut WEB_DIR: PathBuf = PathBuf::new();
 }
 
 async fn index(req: HttpRequest) -> actix_web::Result<NamedFile> {
@@ -21,7 +21,7 @@ async fn index(req: HttpRequest) -> actix_web::Result<NamedFile> {
     if filename.to_str().unwrap() == "" {
         filename = PathBuf::from("index.html");
     }
-    let web_dir = Path::new(unsafe { WEB_DIR.as_str() });
+    let web_dir = unsafe { WEB_DIR.clone().unwrap() };
     let path = web_dir.join(filename);
     println!("Get File: {:?}", &path);
     Ok(NamedFile::open(path)?)
@@ -92,7 +92,7 @@ async fn main() -> std::io::Result<()> {
         }
     }
     
-    unsafe { WEB_DIR = lazy_mut::LazyMut::Value(web_dir.as_os_str().to_str().unwrap().to_string()); }
+    unsafe { WEB_DIR = lazy_mut::LazyMut::Value(web_dir.clone()); }
     // 如果不存在，那就下载
     if !web_dir.exists() {
         update(&current_dir, &current_dir_str).unwrap();
@@ -110,7 +110,7 @@ async fn main() -> std::io::Result<()> {
         Ok(server) => {
             if !args.silent {
                 let mut command = Command::new("open");
-                command.arg(format!("http://{}:{}", &host, &port));
+                command.arg(format!("http://{}:{}/", &host, &port));
                 command.spawn().unwrap();
             }
             server.run().await
