@@ -16,15 +16,32 @@ lazy_mut! {
     static mut WEB_DIR: PathBuf = PathBuf::new();
 }
 
+fn log(req: &HttpRequest, msg: &str) {
+    let method = req.method().as_str();
+    let path = req.path();
+    println!("{} | {} | {}", method, path, msg);
+}
+
 async fn index(req: HttpRequest) -> actix_web::Result<NamedFile> {
     let mut filename: PathBuf = req.match_info().query("filename").parse().unwrap();
     if filename.to_str().unwrap() == "" {
         filename = PathBuf::from("index.html");
     }
     let web_dir = unsafe { WEB_DIR.clone().unwrap() };
-    let path = web_dir.join(filename);
-    println!("Get File: {:?}", &path);
-    Ok(NamedFile::open(path)?)
+    let path = web_dir.join(&filename);
+    if path.exists() {
+        log(&req, "Found File");
+        Ok(NamedFile::open(path)?)
+    } else {
+        let path = web_dir.parent().unwrap().join(&filename);
+        if path.exists() {
+            log(&req, "Found File");
+            Ok(NamedFile::open(path)?)
+        } else {
+            log(&req, "File not Found");
+            Err(actix_web::error::ErrorNotFound("404"))
+        }
+    }
 }
 
 #[derive(Parser, Debug)]
