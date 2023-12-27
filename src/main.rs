@@ -47,7 +47,7 @@ async fn index(req: HttpRequest) -> actix_web::Result<NamedFile> {
 #[derive(Parser, Debug)]
 #[command(
     author = "iewnfod",
-    version = "0.1.0",
+    version = "0.1.1",
     about = "A script to start up FluffyChat web server on your own computer",
     long_about = None
 )]
